@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalText, optionalUuid } from "@/lib/form-fields";
 
 export const ASSET_CONDITIONS = ["good", "worn", "damaged"] as const;
 export const ASSET_STATUSES = ["available", "unavailable", "maintenance", "archived"] as const;
@@ -19,23 +20,9 @@ export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {
   archived: "Archivé",
 };
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null));
-
 export const assetInputSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis.").max(160),
-  categoryId: z
-    .string()
-    .uuid()
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null)),
+  categoryId: optionalUuid(),
   assetCode: z.string().trim().min(1, "La référence est requise.").max(60),
   serialNumber: optionalText(120),
   condition: z.enum(ASSET_CONDITIONS),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalText } from "@/lib/form-fields";
 
 export const LOAN_REQUEST_STATUSES = ["pending", "approved", "rejected", "cancelled"] as const;
 export type LoanRequestStatus = (typeof LOAN_REQUEST_STATUSES)[number];
@@ -10,15 +11,6 @@ export const LOAN_REQUEST_STATUS_LABELS: Record<LoanRequestStatus, string> = {
   cancelled: "Annulée",
 };
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null));
-
 export const publicLoanRequestInputSchema = z.object({
   qrToken: z.string().min(1),
   requesterName: z.string().trim().min(1, "Votre nom est requis.").max(160),
@@ -26,7 +18,7 @@ export const publicLoanRequestInputSchema = z.object({
     .string()
     .trim()
     .email("Adresse e-mail invalide.")
-    .optional()
+    .nullish()
     .or(z.literal(""))
     .transform((value) => (value ? value : null)),
   requestedDueAt: z.string().min(1, "La date de retour souhaitée est requise."),

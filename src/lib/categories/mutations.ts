@@ -3,16 +3,11 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assets, categories } from "@/db/schema";
 import { z } from "zod";
+import { optionalText } from "@/lib/form-fields";
 
 export const categoryInputSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis.").max(120),
-  description: z
-    .string()
-    .trim()
-    .max(500)
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null)),
+  description: optionalText(500),
 });
 
 export type CategoryInput = z.infer<typeof categoryInputSchema>;

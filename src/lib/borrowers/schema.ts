@@ -1,13 +1,5 @@
 import { z } from "zod";
-
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null));
+import { optionalText } from "@/lib/form-fields";
 
 export const borrowerInputSchema = z.object({
   displayName: z.string().trim().min(1, "Le nom est requis.").max(160),
@@ -15,7 +7,7 @@ export const borrowerInputSchema = z.object({
     .string()
     .trim()
     .email("Adresse e-mail invalide.")
-    .optional()
+    .nullish()
     .or(z.literal(""))
     .transform((value) => (value ? value : null)),
   borrowerCode: optionalText(60),

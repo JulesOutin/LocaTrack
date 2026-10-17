@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ASSET_CONDITIONS } from "@/lib/assets/schema";
+import { optionalText, optionalUuid } from "@/lib/form-fields";
 
 export const LOAN_STATUSES = ["active", "returned", "cancelled"] as const;
 export type LoanStatus = (typeof LOAN_STATUSES)[number];
@@ -10,24 +11,10 @@ export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   cancelled: "Annulé",
 };
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null));
-
 export const createLoanInputSchema = z
   .object({
     assetId: z.string().uuid(),
-    borrowerId: z
-      .string()
-      .uuid()
-      .optional()
-      .or(z.literal(""))
-      .transform((value) => (value ? value : null)),
+    borrowerId: optionalUuid(),
     newBorrowerName: optionalText(160),
     dueAt: z.string().min(1, "La date de retour est requise."),
     notes: optionalText(2000),

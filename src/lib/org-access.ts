@@ -17,30 +17,15 @@ export type OrgAccess = {
   settings: OrganizationSettings;
 };
 
-async function loadOrgAccess(
-  organization: typeof organizations.$inferSelect | undefined,
-  userId: string,
-): Promise<OrgAccess | null> {
-  if (!organization) return null;
-
-  const [membership] = await db
-    .select()
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.organizationId, organization.id),
-        eq(memberships.userId, userId),
-      ),
-    )
-    .limit(1);
-
-  if (!membership) return null;
-
+function toOrgAccess(
+  row: { organizations: typeof organizations.$inferSelect; memberships: typeof memberships.$inferSelect },
+  user: { id: string; displayName: string | null; primaryEmail: string | null },
+): OrgAccess {
   return {
-    user: { id: userId, displayName: null, primaryEmail: null },
-    organization,
-    membership,
-    settings: parseOrganizationSettings(organization.settings),
+    user,
+    organization: row.organizations,
+    membership: row.memberships,
+    settings: parseOrganizationSettings(row.organizations.settings),
   };
 }
 
@@ -48,30 +33,36 @@ async function loadOrgAccess(
  * À utiliser dans les pages/layouts : route protégée par l'URL `[orgSlug]`.
  * Redirige vers la connexion si non authentifié, 404 si l'organisation
  * n'existe pas, et vers l'accueil si l'utilisateur n'en est pas membre —
- * l'appartenance est systématiquement revérifiée en base, jamais déduite de
- * l'URL.
+ * l'appartenance est systématiquement revérifiée en base (une seule requête
+ * jointe, jamais déduite de l'URL).
  */
 export async function requireOrgAccessBySlug(orgSlug: string): Promise<OrgAccess> {
   const user = await stackServerApp.getUser({ or: "redirect" });
 
-  const [organization] = await db
+  const [row] = await db
     .select()
     .from(organizations)
+    .innerJoin(
+      memberships,
+      and(eq(memberships.organizationId, organizations.id), eq(memberships.userId, user.id)),
+    )
     .where(eq(organizations.slug, orgSlug))
     .limit(1);
 
-  if (!organization) {
-    notFound();
-  }
-
-  const access = await loadOrgAccess(organization, user.id);
-  if (!access) {
+  if (!row) {
+    // On ne distingue pas "organisation inexistante" de "non membre" dans la
+    // requête (même coût), mais on affine la réponse pour l'utilisateur :
+    // 404 si l'organisation n'existe vraiment pas, sinon retour à l'accueil.
+    const [organization] = await db
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(eq(organizations.slug, orgSlug))
+      .limit(1);
+    if (!organization) notFound();
     redirect("/");
   }
 
-  access.user.displayName = user.displayName;
-  access.user.primaryEmail = user.primaryEmail;
-  return access;
+  return toOrgAccess(row, { id: user.id, displayName: user.displayName, primaryEmail: user.primaryEmail });
 }
 
 /**
@@ -83,18 +74,19 @@ export async function getOrgAccessById(organizationId: string): Promise<OrgAcces
   const user = await stackServerApp.getUser();
   if (!user) return null;
 
-  const [organization] = await db
+  const [row] = await db
     .select()
     .from(organizations)
+    .innerJoin(
+      memberships,
+      and(eq(memberships.organizationId, organizations.id), eq(memberships.userId, user.id)),
+    )
     .where(eq(organizations.id, organizationId))
     .limit(1);
 
-  const access = await loadOrgAccess(organization, user.id);
-  if (!access) return null;
+  if (!row) return null;
 
-  access.user.displayName = user.displayName;
-  access.user.primaryEmail = user.primaryEmail;
-  return access;
+  return toOrgAccess(row, { id: user.id, displayName: user.displayName, primaryEmail: user.primaryEmail });
 }
 
 /**

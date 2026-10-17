@@ -36,6 +36,31 @@ describe("createLoanInputSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  // FormData.get() renvoie null (pas "" ni undefined) pour un champ que le
+  // formulaire n'a pas rendu — ex. le champ masqué par le bascule
+  // "emprunteur existant" / "nouvel emprunteur" du formulaire de prêt.
+  it("accepts an existing borrower when newBorrowerName is absent from the form (null)", () => {
+    const result = createLoanInputSchema.safeParse({
+      assetId: uuid,
+      borrowerId: uuid,
+      newBorrowerName: null,
+      dueAt: "2026-03-01",
+      notes: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a quick-created borrower when borrowerId is absent from the form (null)", () => {
+    const result = createLoanInputSchema.safeParse({
+      assetId: uuid,
+      borrowerId: null,
+      newBorrowerName: "Camille Durand",
+      dueAt: "2026-03-01",
+      notes: null,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("returnLoanInputSchema", () => {
