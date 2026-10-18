@@ -145,7 +145,7 @@ export function LandingPage() {
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
             Locatrack permet à votre établissement de savoir en un instant quel
             matériel est disponible, qui l&apos;a emprunté et quand il doit être
-            rendu — sans tableur complexe ni logiciel de gestion de parc lourd.
+            rendu, sans tableur complexe ni logiciel de gestion de parc lourd.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
